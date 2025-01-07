@@ -222,37 +222,44 @@
         }
 
         async function uploadFiles() {
-            if (!selectedFiles.length) {
-                alert('Please select at least one file to upload.');
-                return;
-            }
+    if (!selectedFiles.length) {
+        alert('Please select at least one file to upload.');
+        return;
+    }
 
-            for (let file of selectedFiles) {
-                const metadata = {
-                    'name': file.name,
-                    'mimeType': file.type || 'application/octet-stream'
-                };
-                const accessToken = gapi.auth.getToken().access_token;
-                const form = new FormData();
-                form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-                form.append('file', file);
-                try {
-                    const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
-                        method: 'POST',
-                        headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
-                        body: form
-                    });
-                    const result = await response.json();
-                    console.log('File uploaded successfully. File ID:', result.id);
-                } catch (error) {
-                    console.error('Error uploading file:', error);
-                }
-            }
+    // Replace with the ID of the folder where you want to upload files
+    const folderId = '1rSxY5C7YCGFS1mpwlAckQQuBTAn8OQH-';
 
-            alert('All files uploaded successfully.');
-            selectedFiles = [];
-            updateFileList();
+    for (let file of selectedFiles) {
+        // File metadata includes the folder ID in the "parents" field
+        const metadata = {
+            'name': file.name,
+            'mimeType': file.type || 'application/octet-stream',
+            'parents': [folderId] // Specify the folder
+        };
+
+        const accessToken = gapi.auth.getToken().access_token;
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+        form.append('file', file);
+
+        try {
+            const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+                method: 'POST',
+                headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
+                body: form
+            });
+            const result = await response.json();
+            console.log('File uploaded successfully. File ID:', result.id);
+        } catch (error) {
+            console.error('Error uploading file:', error);
         }
-    </script>
+    }
+
+    alert('All files uploaded successfully.');
+    selectedFiles = [];
+    updateFileList();
+}
+
 </body>
 </html>
