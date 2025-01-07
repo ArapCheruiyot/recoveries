@@ -226,56 +226,63 @@
         }
 
         async function uploadFiles() {
-            if (!selectedFiles.length) {
-                alert('Please select at least one file to upload.');
-                return;
+    if (!selectedFiles.length) {
+        alert('Please select at least one file to upload.');
+        return;
+    }
+
+    const folderId = '1rSxY5C7YCGFS1mpwlAckQQuBTAn8OQH-'; // Replace with your folder ID
+
+    let uploadedFilesCount = 0;
+
+    for (let file of selectedFiles) {
+        const metadata = {
+            'name': file.name,
+            'mimeType': file.type || 'application/octet-stream',
+            'parents': [folderId],
+        };
+        const accessToken = gapi.auth.getToken().access_token;
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+        form.append('file', file);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', true);
+        xhr.setRequestHeader('Authorization', 'Bearer ' + accessToken);
+
+        // Track upload progress
+        xhr.upload.onprogress = function (event) {
+            if (event.lengthComputable) {
+                const percent = (event.loaded / event.total) * 100;
+                document.getElementById('progress_bar').style.width = percent + '%';
             }
+        };
 
-            const folderId = '1rSxY5C7YCGFS1mpwlAckQQuBTAn8OQH-'; // Replace with your folder ID
-
-            let uploadedFilesCount = 0;
-
-            for (let file of selectedFiles) {
-                const metadata = {
-                    'name': file.name,
-                    'mimeType': file.type || 'application/octet-stream',
-                    'parents': [folderId],
-                };
-                const accessToken = gapi.auth.getToken().access_token;
-                const form = new FormData();
-                form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-                form.append('file', file);
-
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', true);
-                xhr.setRequestHeader('Authorization', 'Bearer ' + accessToken);
-
-                // Track upload progress
-                xhr.upload.onprogress = function(event) {
-                    if (event.lengthComputable) {
-                        const percent = (event.loaded / event.total) * 100;
-                        document.getElementById('progress_bar').style.width = percent + '%';
-                    }
-                };
-
-                xhr.onload = function() {
-                    if (xhr.status === 200) {
-                        uploadedFilesCount++;
-                        console.log('File uploaded successfully.');
-                    }
-                };
-
-                xhr.onerror = function() {
-                    console.error('Error uploading file.');
-                };
-
-                xhr.send(form);
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                uploadedFilesCount++;
+                console.log(`File "${file.name}" uploaded successfully.`);
+                // Check if all files have been uploaded
+                if (uploadedFilesCount === selectedFiles.length) {
+                    document.getElementById('progress_bar').style.width = '100%';
+                    alert('All files uploaded successfully.');
+                    selectedFiles = [];
+                    document.getElementById('file_list').innerHTML = '';
+                    document.getElementById('progress_bar').style.width = '0'; // Reset progress bar
+                }
+            } else {
+                console.error(`Error uploading file "${file.name}".`);
             }
+        };
 
-            alert('All files uploaded successfully.');
-            selectedFiles = [];
-            document.getElementById('file_list').innerHTML = '';
-        }
+        xhr.onerror = function () {
+            console.error(`Error uploading file "${file.name}".`);
+        };
+
+        xhr.send(form);
+    }
+}
+
     </script>
 </body>
 </html>
